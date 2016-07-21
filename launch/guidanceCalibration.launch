@@ -1,0 +1,110 @@
+<!-- -->
+<launch>
+<!--camera(front),camera2(left),camera3(back),camera5(right)-->
+    <arg name="camera" default="/guidance"/>
+    <arg name="camera2" default="/guidance2"/>
+    <arg name="camera3" default="/guidance3"/>
+    <arg name="camera5" default="/guidance5"/>
+<!--whether to calibrate stereo -->
+    <arg name="calibrate" default="false"/>
+<!--whether to get point cloud of stereo-->
+    <arg name="stereo_proc" default="true"/>
+    <arg name="stereo_proc2" default="true"/>
+    <arg name="stereo_proc5" default="true"/>
+    <arg name="stereo_proc3" default="false"/>
+<!-- View camera stream. -->
+    <arg name="view" default="true"/>
+    <arg name="view2" default="true"/>
+    <arg name="view5" default="true"/>
+    <arg name="view3" default="false"/>
+    <arg name="rvizDir" default="$(find guidance)/guidanceCalibration.rviz"/>
+<!--guidance calibration node 
+    <node pkg="guidance" type="guidanceNodeCalibration" name="guidanceNodeCalibration"> 
+	<param name="left_param_file" value="$(find guidance)/calibration_files/camera_params_left.yaml" />
+	<param name="right_param_file" value="$(find guidance)/calibration_files/camera_params_right.yaml" />
+	<param name="left2_param_file" value="$(find guidance)/calibration_files/camera2_params_left.yaml" />
+	<param name="right2_param_file" value="$(find guidance)/calibration_files/camera2_params_right.yaml" />
+	<param name="left3_param_file" value="$(find guidance)/calibration_files/camera3_params_left.yaml" />
+	<param name="right3_param_file" value="$(find guidance)/calibration_files/camera3_params_right.yaml" />
+	<param name="left5_param_file" value="$(find guidance)/calibration_files/camera5_params_left.yaml" />
+	<param name="right5_param_file" value="$(find guidance)/calibration_files/camera5_params_right.yaml" />
+    </node>-->
+<!--static transform between guidance cameras and uav  x y z yaw pitch roll-->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="guidance" args="0.1 0 0 -1.57 0 -1.57 vehicle guidance"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="guidance2" args="0 0.1 0 0 0 -1.57 vehicle guidance2"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="guidance3" args="-0.1 0 0 1.57 0 -1.57 vehicle guidance3"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="guidance5" args="0 -0.1 0 -3.1415926 0 -1.57 vehicle guidance5"/>
+ 
+ <!--change ns to choose camera to calibrate -->
+  <group if="$(arg calibrate)">
+  <node  ns="$(arg camera3)" pkg="camera_calibration" type="cameracalibrator.py" name="cameracalibrator_stereo" args="--pattern 'chessboard' --size 8x6 --square 0.061  --no-service-check" output="screen">
+    <remap from="left" to="left/image_raw"/>
+    <remap from="right" to="right/image_raw"/>
+    <remap from="left_camera" to="left"/>
+	<remap from="right_camera" to="right"/>
+  </node>
+  </group>
+<!--get 4 stereo's pointclouds-->
+ <group if="$(arg stereo_proc)">
+ <node ns="$(arg camera)" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" output="screen">
+	<param name="approximate_sync" value="true"/>
+ 	<!--rosparam file="$(arg params_disparity)"/-->
+ </node>
+ </group>
+
+ <group if="$(arg stereo_proc2)">
+ <node ns="$(arg camera2)" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc2" output="screen">
+	<param name="approximate_sync" value="true"/>
+ 	<!--rosparam file="$(arg params_disparity)"/-->
+ </node>
+ </group>
+
+ <group if="$(arg stereo_proc3)">
+ <node ns="$(arg camera3)" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc3" output="screen">
+	<param name="approximate_sync" value="true"/>
+ 	<!--rosparam file="$(arg params_disparity)"/-->
+ </node>
+ </group>
+
+ <group if="$(arg stereo_proc5)">
+ <node ns="$(arg camera5)" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc5" output="screen">
+	<param name="approximate_sync" value="true"/>
+ 	<!--rosparam file="$(arg params_disparity)"/-->
+ </node>
+ </group>
+ <!--view image of stereo-->
+  <group if="$(arg view)">
+    <node name="view" pkg="image_view" type="stereo_view">
+      <remap from="stereo" to="$(arg camera)"/>
+      <remap from="image" to="/image_rect"/>
+      <param name="approximate_sync" value="true"/>
+    </node>
+  </group>
+
+  <group if="$(arg view2)">
+    <node name="view2" pkg="image_view" type="stereo_view">
+      <remap from="stereo" to="$(arg camera2)"/>
+      <remap from="image" to="/image_rect"/>
+      <param name="approximate_sync" value="true"/>
+    </node>
+  </group>
+
+  <group if="$(arg view3)">
+    <node name="view3" pkg="image_view" type="stereo_view">
+      <remap from="stereo" to="$(arg camera3)"/>
+      <remap from="image" to="/image_rect"/>
+      <param name="approximate_sync" value="true"/>
+    </node>
+  </group>
+
+  <group if="$(arg view5)">
+    <node name="view5" pkg="image_view" type="stereo_view">
+      <remap from="stereo" to="$(arg camera5)"/>
+      <remap from="image" to="/image_rect"/>
+      <param name="approximate_sync" value="true"/>
+    </node>
+  </group>
+
+<node pkg="rqt_graph" type="rqt_graph" name="rqt_graph"/>
+<node pkg="rviz" type="rviz" name="rviz" args="-d $(arg rvizDir)"/>
+</launch>
