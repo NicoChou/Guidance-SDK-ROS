@@ -38,7 +38,7 @@ using namespace cv;
 char        	key       = 0;
 bool            show_images = 0;
 uint8_t         verbosity = 0;
-e_vbus_index	CAMERA_ID = e_vbus1;
+e_vbus_index	CAMERA_ID = e_vbus2;
 DJI_lock        g_lock;
 DJI_event       g_event;
 Mat             g_greyscale_image_left(HEIGHT, WIDTH, CV_8UC1);

@@ -24,15 +24,41 @@
 #include "yaml-cpp/yaml.h" // use to parse YAML calibration file
 #include <fstream> // required to parse YAML 
 
+#include <tf/transform_broadcaster.h>
+
 ros::Publisher depth_image_pub;
 ros::Publisher left_image_pub;
 ros::Publisher right_image_pub;
+
+ros::Publisher depth_image_pub_2;
+ros::Publisher left_image_pub_2;
+ros::Publisher right_image_pub_2;
+
+ros::Publisher depth_image_pub_3;
+ros::Publisher left_image_pub_3;
+ros::Publisher right_image_pub_3;
+
+ros::Publisher depth_image_pub_5;
+ros::Publisher left_image_pub_5;
+ros::Publisher right_image_pub_5;
+
+
 ros::Publisher imu_pub;
 ros::Publisher obstacle_distance_pub;
 ros::Publisher velocity_pub;
 ros::Publisher ultrasonic_pub;
 ros::Publisher cam_info_left_pub; // camera info msg publishers
 ros::Publisher cam_info_right_pub;
+
+ros::Publisher cam2_info_left_pub; // left camera info msg publishers
+ros::Publisher cam2_info_right_pub;
+
+ros::Publisher cam3_info_left_pub; // tail camera info msg publishers
+ros::Publisher cam3_info_right_pub;
+
+ros::Publisher cam5_info_left_pub; // right camera info msg publishers
+ros::Publisher cam5_info_right_pub;
+
 
 using namespace cv;
 
@@ -42,12 +68,31 @@ using namespace cv;
 
 char        	key       = 0;
 e_vbus_index	CAMERA_ID = e_vbus1;
+e_vbus_index	CAMERA_ID_2 = e_vbus2;
+e_vbus_index	CAMERA_ID_3 = e_vbus3;
+e_vbus_index	CAMERA_ID_5 = e_vbus5;
+
 DJI_lock        g_lock;
 DJI_event       g_event;
 Mat             g_greyscale_image_left(HEIGHT, WIDTH, CV_8UC1);
 Mat				g_greyscale_image_right(HEIGHT, WIDTH, CV_8UC1);
 Mat				g_depth(HEIGHT,WIDTH,CV_16SC1);
 Mat				depth8(HEIGHT, WIDTH, CV_8UC1);
+
+Mat             g_greyscale_image_left_2(HEIGHT, WIDTH, CV_8UC1);
+Mat				g_greyscale_image_right_2(HEIGHT, WIDTH, CV_8UC1);
+Mat				g_depth_2(HEIGHT,WIDTH,CV_16SC1);
+Mat				depth8_2(HEIGHT, WIDTH, CV_8UC1);
+
+Mat             g_greyscale_image_left_3(HEIGHT, WIDTH, CV_8UC1);
+Mat				g_greyscale_image_right_3(HEIGHT, WIDTH, CV_8UC1);
+Mat				g_depth_3(HEIGHT,WIDTH,CV_16SC1);
+Mat				depth8_3(HEIGHT, WIDTH, CV_8UC1);
+
+Mat             g_greyscale_image_left_5(HEIGHT, WIDTH, CV_8UC1);
+Mat				g_greyscale_image_right_5(HEIGHT, WIDTH, CV_8UC1);
+Mat				g_depth_5(HEIGHT,WIDTH,CV_16SC1);
+Mat				depth8_5(HEIGHT, WIDTH, CV_8UC1);
 
 std::ostream& operator<<(std::ostream& out, const e_sdk_err_code value) {
     const char* s = 0;
@@ -80,6 +125,12 @@ std::ostream& operator<<(std::ostream& out, const e_sdk_err_code value) {
 
 std::string camera_params_left;
 std::string camera_params_right;
+std::string camera2_params_left;
+std::string camera2_params_right;
+std::string camera3_params_left;
+std::string camera3_params_right;
+std::string camera5_params_left;
+std::string camera5_params_right;
 
 static const char CAM_YML_NAME[]    = "camera_name";
 static const char WIDTH_YML_NAME[]  = "image_width";
@@ -209,6 +260,154 @@ int my_callback(int data_type, int data_len, char *content)
             depth_16.encoding	  = sensor_msgs::image_encodings::MONO16;
             depth_image_pub.publish(depth_16.toImageMsg());
         }
+//left image pair(ID=2)
+        if ( data->m_greyscale_image_left[CAMERA_ID_2] ) {
+            memcpy(g_greyscale_image_left_2.data, data->m_greyscale_image_left[CAMERA_ID_2], IMAGE_SIZE);
+            imshow("left_2",  g_greyscale_image_left_2);
+            // publish left greyscale image
+            cv_bridge::CvImage left_8_2;
+            g_greyscale_image_left_2.copyTo(left_8_2.image);
+            left_8_2.header.frame_id  = "guidance2";
+            left_8_2.header.stamp	= time_in_this_loop;
+            left_8_2.encoding		= sensor_msgs::image_encodings::MONO8;
+            left_image_pub_2.publish(left_8_2.toImageMsg());
+
+            sensor_msgs::CameraInfo g_cam_info_left;
+            g_cam_info_left.header.stamp = time_in_this_loop;
+            g_cam_info_left.header.frame_id = "guidance2";
+
+            try {
+                read_params_from_yaml_and_fill_cam_info_msg(camera2_params_left, g_cam_info_left);
+                cam2_info_left_pub.publish(g_cam_info_left);
+            } catch(...) {
+                // if yaml fails to read data, don't try to publish
+            }
+        }
+        if ( data->m_greyscale_image_right[CAMERA_ID_2] ) {
+            memcpy(g_greyscale_image_right_2.data, data->m_greyscale_image_right[CAMERA_ID_2], IMAGE_SIZE);
+            imshow("right_2", g_greyscale_image_right_2);
+            // publish right greyscale image
+            cv_bridge::CvImage right_8_2;
+            g_greyscale_image_right_2.copyTo(right_8_2.image);
+            right_8_2.header.frame_id  = "guidance2";
+            right_8_2.header.stamp	 = time_in_this_loop;
+            right_8_2.encoding  	 = sensor_msgs::image_encodings::MONO8;
+            right_image_pub_2.publish(right_8_2.toImageMsg());
+
+            sensor_msgs::CameraInfo g_cam_info_right;
+            g_cam_info_right.header.stamp = time_in_this_loop;
+            g_cam_info_right.header.frame_id = "guidance2";
+
+            try {
+                read_params_from_yaml_and_fill_cam_info_msg(camera2_params_right, g_cam_info_right);
+                cam2_info_right_pub.publish(g_cam_info_right);
+            } catch(...) {
+                // if yaml fails to read data, don't try to publish
+            }
+        }
+//        if ( data->m_depth_image[CAMERA_ID_2] ) {
+//            memcpy(g_depth_2.data, data->m_depth_image[CAMERA_ID_2], IMAGE_SIZE * 2);
+//            g_depth_2.convertTo(depth8_2, CV_8UC1);
+//            imshow("depth_2", depth8_2);
+//            //publish depth image
+//            cv_bridge::CvImage depth_16_2;
+//            g_depth_2.copyTo(depth_16_2.image);
+//            depth_16_2.header.frame_id  = "guidance2";
+//            depth_16_2.header.stamp	  = ros::Time::now();
+//            depth_16_2.encoding	  = sensor_msgs::image_encodings::MONO16;
+//            depth_image_pub_2.publish(depth_16_2.toImageMsg());
+//        }
+        //camera 3
+        if ( data->m_greyscale_image_left[CAMERA_ID_3] ) {
+            memcpy(g_greyscale_image_left_3.data, data->m_greyscale_image_left[CAMERA_ID_3], IMAGE_SIZE);
+            imshow("left_3",  g_greyscale_image_left_3);
+            // publish left greyscale image
+            cv_bridge::CvImage left_8_3;
+            g_greyscale_image_left_3.copyTo(left_8_3.image);
+            left_8_3.header.frame_id  = "guidance3";
+            left_8_3.header.stamp	= time_in_this_loop;
+            left_8_3.encoding		= sensor_msgs::image_encodings::MONO8;
+            left_image_pub_3.publish(left_8_3.toImageMsg());
+
+            sensor_msgs::CameraInfo g_cam_info_left;
+            g_cam_info_left.header.stamp = time_in_this_loop;
+            g_cam_info_left.header.frame_id = "guidance3";
+
+            try {
+                read_params_from_yaml_and_fill_cam_info_msg(camera3_params_left, g_cam_info_left);
+                cam3_info_left_pub.publish(g_cam_info_left);
+            } catch(...) {
+                // if yaml fails to read data, don't try to publish
+            }
+        }
+        if ( data->m_greyscale_image_right[CAMERA_ID_3] ) {
+            memcpy(g_greyscale_image_right_3.data, data->m_greyscale_image_right[CAMERA_ID_3], IMAGE_SIZE);
+            imshow("right_3", g_greyscale_image_right_3);
+            // publish right greyscale image
+            cv_bridge::CvImage right_8_3;
+            g_greyscale_image_right_3.copyTo(right_8_3.image);
+            right_8_3.header.frame_id  = "guidance3";
+            right_8_3.header.stamp	 = time_in_this_loop;
+            right_8_3.encoding  	 = sensor_msgs::image_encodings::MONO8;
+            right_image_pub_3.publish(right_8_3.toImageMsg());
+
+            sensor_msgs::CameraInfo g_cam_info_right;
+            g_cam_info_right.header.stamp = time_in_this_loop;
+            g_cam_info_right.header.frame_id = "guidance3";
+
+            try {
+                read_params_from_yaml_and_fill_cam_info_msg(camera3_params_right, g_cam_info_right);
+                cam3_info_right_pub.publish(g_cam_info_right);
+            } catch(...) {
+                // if yaml fails to read data, don't try to publish
+            }
+        }
+
+        //camera 5
+        if ( data->m_greyscale_image_left[CAMERA_ID_5] ) {
+            memcpy(g_greyscale_image_left_5.data, data->m_greyscale_image_left[CAMERA_ID_5], IMAGE_SIZE);
+            imshow("left_5",  g_greyscale_image_left_5);
+            // publish left greyscale image
+            cv_bridge::CvImage left_8_5;
+            g_greyscale_image_left_5.copyTo(left_8_5.image);
+            left_8_5.header.frame_id  = "guidance5";
+            left_8_5.header.stamp	= time_in_this_loop;
+            left_8_5.encoding		= sensor_msgs::image_encodings::MONO8;
+            left_image_pub_5.publish(left_8_5.toImageMsg());
+
+            sensor_msgs::CameraInfo g_cam_info_left;
+            g_cam_info_left.header.stamp = time_in_this_loop;
+            g_cam_info_left.header.frame_id = "guidance5";
+
+            try {
+                read_params_from_yaml_and_fill_cam_info_msg(camera5_params_left, g_cam_info_left);
+                cam5_info_left_pub.publish(g_cam_info_left);
+            } catch(...) {
+                // if yaml fails to read data, don't try to publish
+            }
+        }
+        if ( data->m_greyscale_image_right[CAMERA_ID_5] ) {
+            memcpy(g_greyscale_image_right_5.data, data->m_greyscale_image_right[CAMERA_ID_5], IMAGE_SIZE);
+            imshow("right_5", g_greyscale_image_right_5);
+            // publish right greyscale image
+            cv_bridge::CvImage right_8_5;
+            g_greyscale_image_right_5.copyTo(right_8_5.image);
+            right_8_5.header.frame_id  = "guidance5";
+            right_8_5.header.stamp	 = time_in_this_loop;
+            right_8_5.encoding  	 = sensor_msgs::image_encodings::MONO8;
+            right_image_pub_5.publish(right_8_5.toImageMsg());
+
+            sensor_msgs::CameraInfo g_cam_info_right;
+            g_cam_info_right.header.stamp = time_in_this_loop;
+            g_cam_info_right.header.frame_id = "guidance5";
+
+            try {
+                read_params_from_yaml_and_fill_cam_info_msg(camera5_params_right, g_cam_info_right);
+                cam5_info_right_pub.publish(g_cam_info_right);
+            } catch(...) {
+                // if yaml fails to read data, don't try to publish
+            }
+        }
 
         key = waitKey(1);
     }
@@ -317,19 +516,66 @@ int main(int argc, char** argv)
     }
 
     /* initialize ros */
-    ros::init(argc, argv, "GuidanceNode");
+    ros::init(argc, argv, "guidanceNodeCalibration");
     ros::NodeHandle my_node;
-    my_node.getParam("/left_param_file", camera_params_left);
-    my_node.getParam("/right_param_file", camera_params_right);
+    ros::NodeHandle local_nh("~");
+//    my_node.getParam("/left_param_file", camera_params_left);
+//    my_node.getParam("/right_param_file", camera_params_right);
+//    my_node.getParam("/left2_param_file", camera2_params_left);
+//    my_node.getParam("/right2_param_file", camera2_params_right);
+//    my_node.getParam("/left3_param_file", camera3_params_left);
+//    my_node.getParam("/right3_param_file", camera3_params_right);
+//    my_node.getParam("/left5_param_file", camera5_params_left);
+//    my_node.getParam("/right5_param_file", camera5_params_right);
+    local_nh.param("/left_param_file", camera_params_left, "/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera_params_left.yaml");
+    local_nh.param("/right_param_file",camera_params_right,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera_params_right.yaml");
+    local_nh.param("/left2_param_file", camera2_params_left, "/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera2_params_left.yaml");
+    local_nh.param("/right2_param_file",camera2_params_right,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera2_params_right.yaml");
+    local_nh.param("/left3_param_file", camera3_params_left, "/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera3_params_left.yaml");
+    local_nh.param("/right3_param_file",camera3_params_right,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera3_params_right.yaml");
+    local_nh.param("/left5_param_file", camera5_params_left, "/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera5_params_left.yaml");
+    local_nh.param("/right5_param_file",camera5_params_right,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera5_params_right.yaml");
+//    my_node.setParam(camera_params_left,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera_params_left.yaml");
+//    my_node.setParam(camera_params_right,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera_params_right.yaml");
+//    my_node.setParam(camera2_params_left,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera2_params_left.yaml");
+//    my_node.setParam(camera2_params_right,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera2_params_right.yaml");
+//    my_node.setParam(camera3_params_left,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera3_params_left.yaml");
+//    my_node.setParam(camera3_params_right,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera3_params_right.yaml");
+//    my_node.setParam(camera5_params_left,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera5_params_left.yaml");
+//    my_node.setParam(camera5_params_right,"/home/nico/catkin_ws/uav/src/Guidance_SDK_ROS/calibration_files/camera5_params_right.yaml");
+
     depth_image_pub			= my_node.advertise<sensor_msgs::Image>("/guidance/depth_image",1);
     left_image_pub			= my_node.advertise<sensor_msgs::Image>("/guidance/left/image_raw",1);
     right_image_pub			= my_node.advertise<sensor_msgs::Image>("/guidance/right/image_raw",1);
+
+    depth_image_pub_2		= my_node.advertise<sensor_msgs::Image>("/guidance2/depth_image",1);
+    left_image_pub_2		= my_node.advertise<sensor_msgs::Image>("/guidance2/left/image_raw",1);
+    right_image_pub_2		= my_node.advertise<sensor_msgs::Image>("/guidance2/right/image_raw",1);
+
+    depth_image_pub_3		= my_node.advertise<sensor_msgs::Image>("/guidance3/depth_image",1);
+    left_image_pub_3		= my_node.advertise<sensor_msgs::Image>("/guidance3/left/image_raw",1);
+    right_image_pub_3		= my_node.advertise<sensor_msgs::Image>("/guidance3/right/image_raw",1);
+
+    depth_image_pub_5		= my_node.advertise<sensor_msgs::Image>("/guidance5/depth_image",1);
+    left_image_pub_5		= my_node.advertise<sensor_msgs::Image>("/guidance5/left/image_raw",1);
+    right_image_pub_5		= my_node.advertise<sensor_msgs::Image>("/guidance5/right/image_raw",1);
+
     imu_pub  				= my_node.advertise<geometry_msgs::TransformStamped>("/guidance/imu",1);
     velocity_pub  			= my_node.advertise<geometry_msgs::Vector3Stamped>("/guidance/velocity",1);
     obstacle_distance_pub	= my_node.advertise<sensor_msgs::LaserScan>("/guidance/obstacle_distance",1);
     ultrasonic_pub			= my_node.advertise<sensor_msgs::LaserScan>("/guidance/ultrasonic",1);
+
     cam_info_right_pub      = my_node.advertise<sensor_msgs::CameraInfo>("/guidance/right/camera_info",1);
     cam_info_left_pub       = my_node.advertise<sensor_msgs::CameraInfo>("/guidance/left/camera_info",1);
+
+    cam2_info_right_pub      = my_node.advertise<sensor_msgs::CameraInfo>("/guidance2/right/camera_info",1);
+    cam2_info_left_pub       = my_node.advertise<sensor_msgs::CameraInfo>("/guidance2/left/camera_info",1);
+
+    cam3_info_right_pub      = my_node.advertise<sensor_msgs::CameraInfo>("/guidance3/right/camera_info",1);
+    cam3_info_left_pub       = my_node.advertise<sensor_msgs::CameraInfo>("/guidance3/left/camera_info",1);
+
+    cam5_info_right_pub      = my_node.advertise<sensor_msgs::CameraInfo>("/guidance5/right/camera_info",1);
+    cam5_info_left_pub       = my_node.advertise<sensor_msgs::CameraInfo>("/guidance5/left/camera_info",1);
 
     /* initialize guidance */
     reset_config();
@@ -380,52 +626,78 @@ int main(int argc, char** argv)
 
     std::cout << "start_transfer" << std::endl;
 
+//    tf::TransformBroadcaster tf_broadcaster_;
+//    tf::Transform tf_t_;
+//    tf::Quaternion tf_q_;
+//    ros::Rate loop(50);
+
     while (ros::ok())
     {
-        g_event.wait_event();
-        if (key > 0)
-            // set exposure parameters
-            if(key=='j' || key=='k' || key=='m' || key=='n') {
-                if(key=='j')
-                    if(para.m_is_auto_exposure) para.m_expected_brightness += 20;
-                    else para.m_exposure_time += 3;
-                else if(key=='k')
-                    if(para.m_is_auto_exposure) para.m_expected_brightness -= 20;
-                    else para.m_exposure_time -= 3;
-                else if(key=='m') {
-                    para.m_is_auto_exposure = !para.m_is_auto_exposure;
-                    std::cout<<"exposure is "<<para.m_is_auto_exposure<<std::endl;
-                }
-                else if(key=='n') { //return to default
-                    para.m_expected_brightness = para.m_exposure_time = 0;
-                }
+//        tf::Transform transform;
+//        transform.setOrigin();
 
-                std::cout<<"Setting exposure parameters....SensorId="<<CAMERA_ID<<std::endl;
-                para.m_camera_pair_index = CAMERA_ID;
-                set_exposure_param(&para);
-                key = 0;
-            }
-            else {// switch image direction
-                err_code = stop_transfer();
-                RETURN_IF_ERR(err_code);
-                reset_config();
+//        tf_broader.sendTransform();
 
-                if (key == 'q') break;
-                if (key == 'w') CAMERA_ID = e_vbus1;
-                if (key == 'd') CAMERA_ID = e_vbus2;
-                if (key == 'x') CAMERA_ID = e_vbus3;
-                if (key == 'a') CAMERA_ID = e_vbus4;
-                if (key == 's') CAMERA_ID = e_vbus5;
+//        g_event.wait_event();
+//        if (key > 0)
+//            // set exposure parameters
+//            if(key=='j' || key=='k' || key=='m' || key=='n') {
+//                if(key=='j')
+//                    if(para.m_is_auto_exposure) para.m_expected_brightness += 20;
+//                    else para.m_exposure_time += 3;
+//                else if(key=='k')
+//                    if(para.m_is_auto_exposure) para.m_expected_brightness -= 20;
+//                    else para.m_exposure_time -= 3;
+//                else if(key=='m') {
+//                    para.m_is_auto_exposure = !para.m_is_auto_exposure;
+//                    std::cout<<"exposure is "<<para.m_is_auto_exposure<<std::endl;
+//                }
+//                else if(key=='n') { //return to default
+//                    para.m_expected_brightness = para.m_exposure_time = 0;
+//                }
 
-                select_greyscale_image(CAMERA_ID, true);
-                select_greyscale_image(CAMERA_ID, false);
-                select_depth_image(CAMERA_ID);
+//                std::cout<<"Setting exposure parameters....SensorId="<<CAMERA_ID<<std::endl;
+//                para.m_camera_pair_index = CAMERA_ID;
+//                set_exposure_param(&para);
+//                key = 0;
+//            }
+//            else {// switch image direction
+        err_code = stop_transfer();
+        RETURN_IF_ERR(err_code);
+        reset_config();
 
-                err_code = start_transfer();
-                RETURN_IF_ERR(err_code);
-                key = 0;
-            }
+//                if (key == 'q') break;
+//                if (key == 'w') CAMERA_ID = e_vbus1;
+//                if (key == 'd') CAMERA_ID = e_vbus2;
+//                if (key == 'x') CAMERA_ID = e_vbus3;
+//                if (key == 'a') CAMERA_ID = e_vbus4;
+//                if (key == 's') CAMERA_ID = e_vbus5;
+
+        select_greyscale_image(CAMERA_ID, true);
+        select_greyscale_image(CAMERA_ID, false);
+        select_depth_image(CAMERA_ID);
+        select_greyscale_image(CAMERA_ID_2, true);
+        select_greyscale_image(CAMERA_ID_2, false);
+        select_depth_image(CAMERA_ID_2);
+        select_greyscale_image(CAMERA_ID_3, true);
+        select_greyscale_image(CAMERA_ID_3, false);
+        select_depth_image(CAMERA_ID_3);
+        select_greyscale_image(CAMERA_ID_5, true);
+        select_greyscale_image(CAMERA_ID_5, false);
+        select_depth_image(CAMERA_ID_5);
+
+        err_code = start_transfer();
+        RETURN_IF_ERR(err_code);
+        key = 0;
+
+//        tf_t_.setOrigin(tf::Vector3(0.1,0,0));
+//        tf_q_.setRPY(0,0,0);
+//        tf_t_.setRotation(tf_q_);
+//        tf_broadcaster_.sendTransform(tf::StampedTransform(tf_t_,));
+
+//            }
         ros::spinOnce();
+//        loop.sleep();
     }
 
     /* release data transfer */

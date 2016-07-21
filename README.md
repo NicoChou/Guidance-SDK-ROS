@@ -18,7 +18,7 @@ The official ROS package of Guidance SDK for 32/64 bit Ubuntu and XU3.
 # Documentation
 To reduce the size of this package, we omit all documents. 
 
-- For getting started, please refer to [Developer Guide](https://developer.dji.com/guidance-sdk/documentation/application-development-guides/index.html).
+- For getting started, please refer to [Developer Guide](https://developer.dji.com/guidance-sdk/documentation/application-development-guides/index.html).Setup USB devide rules 
 - For detailed API documentation, please refer to [Guidance_SDK_API](https://developer.dji.com/guidance-sdk/documentation/introduction/index.html).
 
 # Using ROS tools for calibration and stereo processing

@@ -1,8 +1,12 @@
+<!-- -->
 <launch>
-    <!-- <node pkg="guidance" type="guidanceNode" name="guidanceNode"/> -->
-    <!-- <node pkg="guidance" type="guidanceNodeCalibration" name="guidanceNodeCalibration"> -->
-		<param name="left_param_file" value="$(find guidance)/calibration_files/camera_params_left.yaml" />
-		<param name="right_param_file" value="$(find guidance)/calibration_files/camera_params_right.yaml" />
-    <!-- </node> -->
+	<param name="left_param_file" value="$(find guidance)/calibration_files/camera_params_left.yaml" />
+	<param name="right_param_file" value="$(find guidance)/calibration_files/camera_params_right.yaml" />
+	<param name="left2_param_file" value="$(find guidance)/calibration_files/camera2_params_left.yaml" />
+	<param name="right2_param_file" value="$(find guidance)/calibration_files/camera2_params_right.yaml" />
+	<param name="left3_param_file" value="$(find guidance)/calibration_files/camera3_params_left.yaml" />
+	<param name="right3_param_file" value="$(find guidance)/calibration_files/camera3_params_right.yaml" />
+	<param name="left5_param_file" value="$(find guidance)/calibration_files/camera5_params_left.yaml" />
+	<param name="right5_param_file" value="$(find guidance)/calibration_files/camera5_params_right.yaml" />
 </launch>
 <!-- TODO nodes, if launched, don't run somehow.  -->
